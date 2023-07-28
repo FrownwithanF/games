@@ -4,8 +4,8 @@
   <title>Snake Game</title>
   <style>
     body {
-    background-color: #333; /* Changed background color to dark grey */
-      color: #fff; /* Changed text color to white */
+      background-color: #333;
+      color: #fff;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -15,12 +15,16 @@
     }
 
     #gameCanvas {
-    border: 2px solid #fff; /* Changed canvas border color to white */
+      border: 2px solid #fff;
     }
 
     #score {
       font-size: 24px;
       margin-bottom: 10px;
+    }
+
+    #highscore {
+      font-size: 18px;
     }
 
     #mainMenu {
@@ -31,7 +35,27 @@
       margin-bottom: 20px;
     }
 
-    #mainMenuButton, #restartButton, #pauseButton {
+    #mainMenuButton,
+    #restartButton,
+    #pauseButton,
+    #settingsButton {
+      padding: 8px 16px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #settingsMenu {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #snakeColorInput,
+    #foodColorInput,
+    #gridSizeInput {
+      width: 80px;
+    }
+    #fullscreenButton {
       padding: 8px 16px;
       font-size: 18px;
       cursor: pointer;
@@ -43,6 +67,18 @@
     <h1>Snake Game</h1>
     <p>This game was generated entirely by AI!</p>
     <button id="mainMenuButton" onclick="startGame()">Start Game</button>
+    <button id="settingsButton" onclick="toggleSettings()">Settings</button>
+    <div id="settingsMenu">
+      <label for="speedInput">Snake Speed (milliseconds):</label>
+      <input type="number" id="speedInput" value="100" min="50" max="500">
+      <label for="snakeColorInput">Snake Color:</label>
+      <input type="color" id="snakeColorInput" value="#00FF00">
+      <label for="foodColorInput">Food Color:</label>
+      <input type="color" id="foodColorInput" value="#FF0000">
+      <label for="gridSizeInput">Grid Size:</label>
+      <input type="number" id="gridSizeInput" value="20" min="10" max="50">
+      <button onclick="applySettings()">Apply</button>
+    </div>
   </div>
 
   <div id="gameScreen" style="display: none;">
@@ -58,11 +94,13 @@
 
   <script>
     const mainMenu = document.getElementById('mainMenu');
+    const settingsMenu = document.getElementById('settingsMenu');
     const gameScreen = document.getElementById('gameScreen');
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    const box = 20;
+    let box = 20;
+    let gridSize = 20;
     let snake = [{ x: 9 * box, y: 10 * box }];
     let food = { x: 0, y: 0 };
     let dx = box;
@@ -72,9 +110,16 @@
     let gamePaused = true;
     let gameStarted = false;
     let gameLoopInterval;
+    let snakeSpeed = 100;
+    let snakeColor = '#00FF00';
+    let foodColor = '#FF0000';
 
     const scoreElement = document.getElementById('score');
     const highScoreElement = document.getElementById('highscore');
+    const speedInput = document.getElementById('speedInput');
+    const snakeColorInput = document.getElementById('snakeColorInput');
+    const foodColorInput = document.getElementById('foodColorInput');
+    const gridSizeInput = document.getElementById('gridSizeInput');
 
     document.addEventListener('keydown', changeDirection);
 
@@ -84,13 +129,15 @@
       gameStarted = true;
       gamePaused = false;
       score = 0;
+      gridSize = parseInt(gridSizeInput.value) || 20; // Get the grid size from the input
+      box = canvas.width / gridSize; // Update the box size based on the grid size
       snake = [{ x: 9 * box, y: 10 * box }];
       generateFood();
       updateScore();
 
       // Start the game loop if it's not already running
       if (!gameLoopInterval) {
-        gameLoopInterval = setInterval(gameLoop, 100);
+        gameLoopInterval = setInterval(gameLoop, snakeSpeed);
       }
     }
 
@@ -108,6 +155,8 @@
       gameStarted = true;
       gamePaused = false;
       score = 0;
+      gridSize = parseInt(gridSizeInput.value) || 20; // Get the grid size from the input
+      box = canvas.width / gridSize; // Update the box size based on the grid size
       snake = [{ x: 9 * box, y: 10 * box }];
       generateFood();
       updateScore();
@@ -116,7 +165,7 @@
       if (gameLoopInterval) {
         clearInterval(gameLoopInterval);
       }
-      gameLoopInterval = setInterval(gameLoop, 100);
+      gameLoopInterval = setInterval(gameLoop, snakeSpeed);
     }
 
     function returnToMainMenu() {
@@ -136,12 +185,12 @@
 
       // Draw snake
       snake.forEach((segment) => {
-        ctx.fillStyle = 'green';
+        ctx.fillStyle = snakeColor;
         ctx.fillRect(segment.x, segment.y, box, box);
       });
 
       // Draw food
-      ctx.fillStyle = 'red';
+      ctx.fillStyle = foodColor;
       ctx.fillRect(food.x, food.y, box, box);
 
       // Update snake position
@@ -157,6 +206,7 @@
           if (score > highScore) {
             highScore = score;
           }
+         
           updateScore();
         } else {
           snake.pop();
@@ -179,8 +229,8 @@
       // Generate a new food position that is not inside the snake
       let validPosition = false;
       while (!validPosition) {
-        food.x = Math.floor(Math.random() * 20) * box;
-        food.y = Math.floor(Math.random() * 20) * box;
+        food.x = Math.floor(Math.random() * gridSize) * box;
+        food.y = Math.floor(Math.random() * gridSize) * box;
 
         // Check if the generated position is not inside the snake
         validPosition = snake.every(segment => segment.x !== food.x || segment.y !== food.y);
@@ -224,6 +274,36 @@
         dx = 0;
         dy = box;
       }
+    }
+
+    function toggleSettings() {
+      if (settingsMenu.style.display === 'flex') {
+        settingsMenu.style.display = 'none';
+      } else {
+        settingsMenu.style.display = 'flex';
+      }
+    }
+
+    function applySettings() {
+      const newSpeed = parseInt(speedInput.value);
+      if (!isNaN(newSpeed)) {
+        snakeSpeed = newSpeed;
+        // Restart the game loop with the new speed
+        if (gameLoopInterval) {
+          clearInterval(gameLoopInterval);
+        }
+        gameLoopInterval = setInterval(gameLoop, snakeSpeed);
+      }
+
+      // Get the selected snake color and food color from the input elements
+      snakeColor = snakeColorInput.value;
+      foodColor = foodColorInput.value;
+
+      // Get the selected grid size from the input element
+      gridSize = parseInt(gridSizeInput.value) || 20; // Use default size if invalid input
+      box = canvas.width / gridSize; // Update the box size based on the grid size
+
+      toggleSettings();
     }
 
     function gameLoop() {
