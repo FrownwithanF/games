@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Snake Game</title>
+  <style>
+    body {
+    background-color: #333; /* Changed background color to dark grey */
+      color: #fff; /* Changed text color to white */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #gameCanvas {
+    border: 2px solid #fff; /* Changed canvas border color to white */
+    }
+
+    #score {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    #mainMenu {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #mainMenuButton, #restartButton, #pauseButton {
+      padding: 8px 16px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="mainMenu">
+    <h1>Snake Game</h1>
+    <p>This game was generated entirely by AI!</p>
+    <button id="mainMenuButton" onclick="startGame()">Start Game</button>
+  </div>
+
+  <div id="gameScreen" style="display: none;">
+    <div id="score">Score: 0</div>
+    <div id="highscore">High Score: 0</div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div>
+      <button id="pauseButton" onclick="togglePause()">Pause</button>
+      <button id="restartButton" onclick="restartGame()">Restart</button>
+      <button id="mainMenuButton" onclick="returnToMainMenu()">Main Menu</button>
+    </div>
+  </div>
+
+  <script>
+    const mainMenu = document.getElementById('mainMenu');
+    const gameScreen = document.getElementById('gameScreen');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const box = 20;
+    let snake = [{ x: 9 * box, y: 10 * box }];
+    let food = { x: 0, y: 0 };
+    let dx = box;
+    let dy = 0;
+    let score = 0;
+    let highScore = 0;
+    let gamePaused = true;
+    let gameStarted = false;
+    let gameLoopInterval;
+
+    const scoreElement = document.getElementById('score');
+    const highScoreElement = document.getElementById('highscore');
+
+    document.addEventListener('keydown', changeDirection);
+
+    function startGame() {
+      mainMenu.style.display = 'none';
+      gameScreen.style.display = 'block';
+      gameStarted = true;
+      gamePaused = false;
+      score = 0;
+      snake = [{ x: 9 * box, y: 10 * box }];
+      generateFood();
+      updateScore();
+
+      // Start the game loop if it's not already running
+      if (!gameLoopInterval) {
+        gameLoopInterval = setInterval(gameLoop, 100);
+      }
+    }
+
+    function pauseGame() {
+      gamePaused = !gamePaused;
+    }
+
+    function togglePause() {
+      gamePaused = !gamePaused;
+    }
+
+    function restartGame() {
+      mainMenu.style.display = 'none';
+      gameScreen.style.display = 'block';
+      gameStarted = true;
+      gamePaused = false;
+      score = 0;
+      snake = [{ x: 9 * box, y: 10 * box }];
+      generateFood();
+      updateScore();
+
+      // Restart the game loop if it's already running
+      if (gameLoopInterval) {
+        clearInterval(gameLoopInterval);
+      }
+      gameLoopInterval = setInterval(gameLoop, 100);
+    }
+
+    function returnToMainMenu() {
+      gameStarted = false;
+      mainMenu.style.display = 'flex';
+      gameScreen.style.display = 'none';
+
+      // Stop the game loop
+      if (gameLoopInterval) {
+        clearInterval(gameLoopInterval);
+        gameLoopInterval = null;
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw snake
+      snake.forEach((segment) => {
+        ctx.fillStyle = 'green';
+        ctx.fillRect(segment.x, segment.y, box, box);
+      });
+
+      // Draw food
+      ctx.fillStyle = 'red';
+      ctx.fillRect(food.x, food.y, box, box);
+
+      // Update snake position
+      if (!gamePaused) {
+        const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+        snake.unshift(head);
+
+        // Check if snake eats the food
+        if (head.x === food.x && head.y === food.y) {
+          // Regenerate food if it's eaten
+          generateFood();
+          score += 10;
+          if (score > highScore) {
+            highScore = score;
+          }
+          updateScore();
+        } else {
+          snake.pop();
+        }
+
+        // Check for game over conditions
+        if (isGameOver()) {
+          gameOver();
+          return;
+        }
+      }
+    }
+
+    function updateScore() {
+      scoreElement.textContent = `Score: ${score}`;
+      highScoreElement.textContent = `High Score: ${highScore}`;
+    }
+
+    function generateFood() {
+      // Generate a new food position that is not inside the snake
+      let validPosition = false;
+      while (!validPosition) {
+        food.x = Math.floor(Math.random() * 20) * box;
+        food.y = Math.floor(Math.random() * 20) * box;
+
+        // Check if the generated position is not inside the snake
+        validPosition = snake.every(segment => segment.x !== food.x || segment.y !== food.y);
+      }
+    }
+
+    function isGameOver() {
+      // Check for collisions with walls or the snake itself
+      const head = snake[0];
+      if (
+        head.x < 0 || head.x >= canvas.width ||
+        head.y < 0 || head.y >= canvas.height ||
+        snake.some((segment, index) => index !== 0 && segment.x === head.x && segment.y === head.y)
+      ) {
+        return true;
+      }
+
+      return false;
+    }
+
+    function gameOver() {
+      gamePaused = true;
+      // Display a game over message
+      ctx.fillStyle = 'black';
+      ctx.font = '40px Arial';
+      ctx.fillText('Game Over', canvas.width / 2 - 100, canvas.height / 2);
+    }
+
+    function changeDirection(event) {
+      const key = event.keyCode;
+      if (key === 37 && dx !== box) {
+        dx = -box;
+        dy = 0;
+      } else if (key === 38 && dy !== box) {
+        dx = 0;
+        dy = -box;
+      } else if (key === 39 && dx !== -box) {
+        dx = box;
+        dy = 0;
+      } else if (key === 40 && dy !== -box) {
+        dx = 0;
+        dy = box;
+      }
+    }
+
+    function gameLoop() {
+      if (!isGameOver() && !gamePaused && gameStarted) {
+        draw();
+      }
+    }
+  </script>
+</body>
+</html>
