@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guess the Number</title>
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    input[type="number"] {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      margin-right: 10px;
+      color: #fff;
+      background-color: #333;
+      /* Add transition for the color and background-color properties */
+      transition: color 1s, background-color 1s;
+    }
+
+    .success {
+      color: #00ff00 !important;
+    }
+
+    .error {
+      color: #ff0000 !important;
+    }
+
+    /* Additional styles for the message display */
+    #message {
+      font-size: 18px;
+      margin-top: 10px;
+      opacity: 0; /* Initially set to transparent */
+      /* Add transition for the opacity property */
+      transition: opacity 1s;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Guess the Number</h1>
+    <p>Guess a number between 1 and 100:</p>
+    <input type="number" id="guessInput" placeholder="Enter your guess" onkeypress="checkGuess(event)">
+    <!-- Element to display the message -->
+    <div id="message"></div>
+  </div>
+
+  <!-- Audio elements for correct and incorrect sounds -->
+  <audio id="correctSound" src="correct.wav"></audio>
+  <audio id="incorrectSound" src="incorrect.wav"></audio>
+
+  <script>
+    const randomNumber = Math.floor(Math.random() * 100) + 1; // Generate a random number between 1 and 100
+    const guessInput = document.getElementById("guessInput");
+    const messageElement = document.getElementById("message");
+    const correctSound = document.getElementById("correctSound");
+    const incorrectSound = document.getElementById("incorrectSound");
+
+    let successTimeoutId; // Variable to store the timeout ID for success message
+    let errorTimeoutId; // Variable to store the timeout ID for error message
+
+    function checkGuess(event) {
+      if (event.key === "Enter") {
+        const guessValue = parseInt(guessInput.value);
+
+        if (isNaN(guessValue)) {
+          alert("Please enter a valid number.");
+          return;
+        }
+
+        if (guessValue === randomNumber) {
+          guessInput.classList.add("success");
+          guessInput.classList.remove("error"); // Remove the "error" class if it exists
+          playSound(correctSound);
+          showMessage("Congratulations! You guessed it right!", "#00ff00");
+        } else if (guessValue < randomNumber) {
+          guessInput.classList.remove("success");
+          guessInput.classList.add("error");
+          playSound(incorrectSound);
+          showMessage("Too low. Try again!", "#ff0000");
+        } else {
+          guessInput.classList.remove("success");
+          guessInput.classList.add("error");
+          playSound(incorrectSound);
+          showMessage("Too high. Try again!", "#ff0000");
+        }
+
+        // Prevent form submission on Enter key press
+        event.preventDefault();
+      }
+    }
+
+    function showMessage(text, color) {
+      clearTimeout(successTimeoutId); // Clear any existing success message timeout
+      clearTimeout(errorTimeoutId); // Clear any existing error message timeout
+
+      messageElement.textContent = text;
+      messageElement.style.color = color;
+      messageElement.style.opacity = 1; // Set the opacity to fully visible
+
+      // Fade out the message and reset the input color after 3 seconds (adjust as needed)
+      successTimeoutId = setTimeout(() => {
+        messageElement.style.opacity = 0; // Set the opacity to fully transparent after 3 seconds (adjust as needed)
+        guessInput.style.backgroundColor = "#333"; // Reset the input background color
+        guessInput.classList.remove("error"); // Remove the "error" class if it exists
+
+        // Reset the input color after the message is faded out
+        setTimeout(() => {
+          guessInput.classList.remove("success"); // Reset the input color
+        }, 1000); // Adjust this delay as needed
+      }, 3000); // Adjust this delay as needed
+
+      // Clear the error message timeout when showing a success message
+      errorTimeoutId = setTimeout(() => {}, 0); // A tiny delay of 0ms effectively clears the error timeout immediately
+    }
+
+    function playSound(sound) {
+      sound.pause();
+      sound.currentTime = 0;
+      sound.play();
+    }
+  </script>
+</body>
+</html>
